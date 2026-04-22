@@ -93,16 +93,22 @@ function Invoke-APICompat {
 
         # Extract the values of VersionPrefix and VersionSuffix from the .csproj XML file.
         $xml = [xml](Get-Content $DirectoryBuildPropsPath)
-        $versionPrefix = $($xml.Project.PropertyGroup[3].VersionPrefix)
-        $versionSuffix = $($xml.Project.PropertyGroup[3].VersionSuffix)
+        $versionPropertyGroup = $xml.Project.PropertyGroup | Where-Object { $_.VersionPrefix -or $_.VersionSuffix } | Select-Object -First 1
+
+        if (-not $versionPropertyGroup) {
+            throw "Could not find version information in '$DirectoryBuildPropsPath'."
+        }
+
+        $versionPrefix = $versionPropertyGroup.VersionPrefix
+        $versionSuffix = $versionPropertyGroup.VersionSuffix
         $currentVersion = [string]::IsNullOrEmpty($versionSuffix) ? "$($versionPrefix)" : "$($versionPrefix)-$($versionSuffix)"
 
         $currentNuGetPackagePath = Join-Path $ReleasePath "$($PackageName).$($currentVersion).nupkg"
         $currentNuGetSymbolsPath = Join-Path $ReleasePath "$($PackageName).$($currentVersion).snupkg"
 
         # Create temporary folder
-        $tempFolderPath = Join-Path $PSScriptRoot "\TempApiCompatibility"
-        New-Item -ItemType Directory -Path $tempFolderPath | Out-Null
+        $tempFolderPath = Join-Path $PSScriptRoot "TempApiCompatibility"
+        New-Item -ItemType Directory -Path $tempFolderPath -Force | Out-Null
 
         # Download OpenAI NuGet package
         $baselineNuGetPackageName = "$($PackageName).$($BaselineVersion).nupkg"
@@ -121,15 +127,15 @@ function Invoke-APICompat {
         $warningRegex = "CP\d\d\d\d"
 
         # Concatenate the ignored namespaces into a single string, delimiting them by "|" and escaping the "."
-        $ignoredRegex = $IgnoredNamespaces -join "|" -creplace "\.", "\."
-
-        Write-Output $excludedRegex
+        $ignoredRegex = if ($IgnoredNamespaces) {
+            ($IgnoredNamespaces | ForEach-Object { [regex]::Escape($_) }) -join "|"
+        }
 
         $warningsFound = 0
 
         foreach ($line in $($output -split "`r`n")) {
             if ($line -cmatch $warningRegex) {
-                if ($($line -cnotmatch $ignoredRegex)) {
+                if (-not $ignoredRegex -or $line -cnotmatch $ignoredRegex) {
                     $warningsFound++
                 }
             }
@@ -142,7 +148,7 @@ function Invoke-APICompat {
         else {
             foreach ($line in $($output -split "`r`n")) {
                 if ($line -cmatch $warningRegex) {
-                    if ($($line -cnotmatch $ignoredRegex)){
+                    if (-not $ignoredRegex -or $line -cnotmatch $ignoredRegex){
                         Write-Warning "$line"
                         Write-Output ""
                     }
@@ -155,9 +161,17 @@ function Invoke-APICompat {
         }
     }
     finally {
-        Remove-Item -Path $tempFolderPath -Recurse -Force
-        Remove-Item -Path $currentNuGetPackagePath -Force
-        Remove-Item -Path $currentNuGetSymbolsPath -Force
+        if ($tempFolderPath -and (Test-Path $tempFolderPath)) {
+            Remove-Item -Path $tempFolderPath -Recurse -Force
+        }
+
+        if ($currentNuGetPackagePath -and (Test-Path $currentNuGetPackagePath)) {
+            Remove-Item -Path $currentNuGetPackagePath -Force
+        }
+
+        if ($currentNuGetSymbolsPath -and (Test-Path $currentNuGetSymbolsPath)) {
+            Remove-Item -Path $currentNuGetSymbolsPath -Force
+        }
     }
 }
 
