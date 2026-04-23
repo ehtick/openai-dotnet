@@ -1,8 +1,8 @@
 import "@typespec/openapi";
 import "../responses/models.tsp";
-import "../common/models.tsp";
 using TypeSpec.OpenAPI;
 namespace OpenAI;
+
 #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
 model ConversationResource {
   /** The unique ID of the conversation. */
@@ -89,7 +89,7 @@ model DeletedConversation {
 model CreateConversationBody {
   #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
   #suppress "@azure-tools/typespec-azure-core/no-nullable" "Auto-suppressed warnings non-applicable rules during import."
-  metadata?: Metadata | null;
+  metadata?: Record<string> | null;
   #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
   #suppress "@azure-tools/typespec-azure-core/no-nullable" "Auto-suppressed warnings non-applicable rules during import."
   items?: ItemResource[] | null;
@@ -100,7 +100,7 @@ model UpdateConversationBody {
   /** Set of 16 key-value pairs that can be attached to an object. This can be useful for storing additional information about the object in a structured format, and querying for objects via API or the dashboard.
   Keys are strings with a maximum length of 64 characters. Values are strings with a maximum length of 512 characters. */
   #suppress "@azure-tools/typespec-azure-core/no-nullable" "Auto-suppressed warnings non-applicable rules during import."
-  metadata: Metadata | null;
+  metadata: Record<string> | null;
 }
 
 #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."

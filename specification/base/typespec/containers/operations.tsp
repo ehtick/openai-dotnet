@@ -1,7 +1,6 @@
 import "@typespec/http";
 import "@typespec/openapi";
 
-import "../common";
 import "./models.tsp";
 
 using TypeSpec.Http;
@@ -16,17 +15,32 @@ interface Containers {
   @operationId("ListContainers")
   @list
   listContainers(
-    ...PageLimitQueryParameter,
-    ...PageOrderQueryParameter,
-    ...PageAfterQueryParameter,
-  ): ContainerListResource | ErrorResponse;
+    /**
+     * A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
+     * default is 20.
+     */
+    @query limit?: int32 = 20,
+
+    /**
+     * Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
+     * for descending order.
+     */
+    @query order?: ContainerCollectionOrder,
+
+    /**
+     * A cursor for use in pagination. `after` is an object ID that defines your place in the list.
+     * For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
+     * subsequent call can include after=obj_foo in order to fetch the next page of the list.
+     */
+    @query @continuationToken after?: string,
+  ): ContainerListResource | ContainersErrorResponse;
 
   @post
   @operationId("CreateContainer")
   createContainer(
     @body
     body: CreateContainerBody,
-  ): ContainerResource | ErrorResponse;
+  ): ContainerResource | ContainersErrorResponse;
 
   @get
   @route("{container_id}")
@@ -34,7 +48,7 @@ interface Containers {
   retrieveContainer(
     @path
     container_id: string,
-  ): ContainerResource | ErrorResponse;
+  ): ContainerResource | ContainersErrorResponse;
 
   @delete
   @route("{container_id}")
@@ -46,7 +60,7 @@ interface Containers {
     id: string;
     object: "container.deleted";
     deleted: true;
-  } | ErrorResponse;
+  } | ContainersErrorResponse;
 
   @post
   @route("{container_id}/files")
@@ -60,7 +74,7 @@ interface Containers {
 
     @multipartBody
     body: CreateContainerFileBody,
-  ): ContainerFileResource | ErrorResponse;
+  ): ContainerFileResource | ContainersErrorResponse;
 
   @get
   @route("{container_id}/files")
@@ -70,10 +84,25 @@ interface Containers {
     @path
     container_id: string,
 
-    ...PageLimitQueryParameter,
-    ...PageOrderQueryParameter,
-    ...PageAfterQueryParameter,
-  ): ContainerFileListResource | ErrorResponse;
+    /**
+     * A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
+     * default is 20.
+     */
+    @query limit?: int32 = 20,
+
+    /**
+     * Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
+     * for descending order.
+     */
+    @query order?: ContainerFileCollectionOrder,
+
+    /**
+     * A cursor for use in pagination. `after` is an object ID that defines your place in the list.
+     * For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
+     * subsequent call can include after=obj_foo in order to fetch the next page of the list.
+     */
+    @query @continuationToken after?: string,
+  ): ContainerFileListResource | ContainersErrorResponse;
 
   @get
   @route("{container_id}/files/{file_id}")
@@ -84,7 +113,7 @@ interface Containers {
 
     @path
     file_id: string,
-  ): ContainerFileResource | ErrorResponse;
+  ): ContainerFileResource | ContainersErrorResponse;
 
   @delete
   @route("{container_id}/files/{file_id}")
@@ -99,7 +128,7 @@ interface Containers {
     id: string;
     object: "container.file.deleted";
     deleted: true;
-  } | ErrorResponse;
+  } | ContainersErrorResponse;
 
   @get
   @route("{container_id}/files/{file_id}/content")
@@ -112,5 +141,5 @@ interface Containers {
     file_id: string,
   ): {
     @encode("base64") @body file_content: bytes;
-  } | ErrorResponse;
+  } | ContainersErrorResponse;
 }

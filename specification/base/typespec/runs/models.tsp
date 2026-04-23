@@ -4,7 +4,6 @@
  */
 
 import "../assistants";
-import "../common";
 import "../messages";
 import "../threads";
 import "./custom.tsp";
@@ -13,6 +12,35 @@ using Http;
 using TypeSpec.OpenAPI;
 
 namespace OpenAI;
+
+model RunsError {
+  code: string | null;
+  message: string;
+  param: string | null;
+  type: string;
+}
+
+@error
+model RunsErrorResponse {
+  error: RunsError;
+}
+
+@doc("""
+  **Reasoning models only**
+  
+  Constrains effort on reasoning for
+  [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+  Currently supported values are `none`, `minimal`, `low`, `medium`, and `high`. Reducing
+  reasoning effort can result in faster responses and fewer tokens used
+  on reasoning in a response.
+  """)
+union RunsReasoningEffort {
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+}
 
 // Tool generated type. Extracts from SubmitToolOutputsRunRequest.tool_outputs
 alias SubmitToolOutputsRunRequestToolOutput = {
@@ -44,7 +72,7 @@ model CreateRunRequest {
   @extension("x-oaiTypeLabel", "string")
   `model`?: AssistantSupportedModels | null;
 
-  reasoning_effort?: ReasoningEffort | null = "medium";
+  reasoning_effort?: RunsReasoningEffort | null = "medium";
 
   /** Overrides the [instructions](/docs/api-reference/assistants/createAssistant) of the assistant. This is useful for modifying the behavior on a per-run basis. */
   instructions?: string | null;
@@ -60,7 +88,7 @@ model CreateRunRequest {
   // Tool note: can't automatically apply to nullable: @maxItems(20)
   tools?: AssistantToolDefinition[] | null;
 
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 
   /** What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. */
   @minValue(0)
@@ -95,12 +123,12 @@ model CreateRunRequest {
 
   truncation_strategy?: TruncationObject | null;
   tool_choice?: AssistantsApiToolChoiceOption | null;
-  parallel_tool_calls?: ParallelToolCalls = true;
+  parallel_tool_calls?: boolean = true;
   response_format?: AssistantsApiResponseFormatOption | null;
 }
 
 model ModifyRunRequest {
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 }
 
 model CreateThreadAndRunRequest {
@@ -171,7 +199,7 @@ model CreateThreadAndRunRequest {
     file_search?: ToolResourcesFileSearchIdsOnly;
   } | null;
 
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 
   /** What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. */
   @minValue(0)
@@ -206,7 +234,7 @@ model CreateThreadAndRunRequest {
 
   truncation_strategy?: TruncationObject | null;
   tool_choice?: AssistantsApiToolChoiceOption | null;
-  parallel_tool_calls?: ParallelToolCalls = true;
+  parallel_tool_calls?: boolean = true;
   response_format?: AssistantsApiResponseFormatOption | null;
 }
 
@@ -339,9 +367,17 @@ model RunStepDetailsToolCallsFileSearchObject
   };
 }
 
+@doc("""
+  The ranker to use for the file search. If not specified will use the `auto` ranker.
+  """)
+union RunStepFileSearchRanker {
+  "auto",
+  "default_2024_08_21",
+}
+
 /** The ranking options for the file search. */
 model RunStepDetailsToolCallsFileSearchRankingOptionsObject {
-  ranker: FileSearchRanker;
+  ranker: RunStepFileSearchRanker;
 
   /** The score threshold for the file search. All values must be a floating point number between 0 and 1. */
   @minValue(0)
@@ -528,7 +564,16 @@ model RunObject {
   @maxItems(20)
   tools: AssistantToolDefinition[] = #[];
 
-  ...MetadataPropertyForResponse;
+  /**
+   * Set of 16 key-value pairs that can be attached to an object. This can be
+   * useful for storing additional information about the object in a structured
+   * format, and querying for objects via API or the dashboard.
+   *
+   * Keys are strings with a maximum length of 64 characters. Values are strings
+   * with a maximum length of 512 characters.
+   */
+  @extension("x-oaiTypeLabel", "map")
+  metadata: Record<string> | null;
   usage: RunCompletionUsage | null;
 
   /** The sampling temperature used for this run. If not set, defaults to 1. */
@@ -547,7 +592,7 @@ model RunObject {
 
   truncation_strategy: TruncationObject | null;
   tool_choice: AssistantsApiToolChoiceOption | null;
-  parallel_tool_calls: ParallelToolCalls = true;
+  parallel_tool_calls: boolean = true;
   response_format: AssistantsApiResponseFormatOption | null;
 }
 
@@ -622,7 +667,16 @@ model RunStepObject {
   @encode("unixTimestamp", int32)
   completed_at: utcDateTime | null;
 
-  ...MetadataPropertyForResponse;
+  /**
+   * Set of 16 key-value pairs that can be attached to an object. This can be
+   * useful for storing additional information about the object in a structured
+   * format, and querying for objects via API or the dashboard.
+   *
+   * Keys are strings with a maximum length of 64 characters. Values are strings
+   * with a maximum length of 512 characters.
+   */
+  @extension("x-oaiTypeLabel", "map")
+  metadata: Record<string> | null;
   usage: RunStepCompletionUsage | null;
 }
 
@@ -809,4 +863,10 @@ model RunStepDeltaStepDetailsToolCallsFunctionObject
       """)
     output?: string | null;
   };
+}
+
+union RunCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
 }

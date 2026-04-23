@@ -3,13 +3,136 @@
  * Edits made directly to this file will be lost.
  */
 
-import "../common";
 import "./custom.tsp";
 
 using Http;
 using TypeSpec.OpenAPI;
+using Azure.ClientGenerator.Core;
 
 namespace OpenAI;
+
+model AssistantsError {
+  code: string | null;
+  message: string;
+  param: string | null;
+  type: string;
+}
+
+@error
+model AssistantsErrorResponse {
+  error: AssistantsError;
+}
+
+@doc("""
+  **Reasoning models only**
+  
+  Constrains effort on reasoning for
+  [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+  Currently supported values are `none`, `minimal`, `low`, `medium`, and `high`. Reducing
+  reasoning effort can result in faster responses and fewer tokens used
+  on reasoning in a response.
+  """)
+union AssistantsReasoningEffort {
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+}
+
+@discriminator("type")
+model AssistantsResponseFormat {
+  type: "text" | "json_object" | "json_schema";
+}
+
+
+// Tool customization (apply_discriminator): establish a common, discriminated union
+@doc("""
+  JSON object response format. An older method of generating JSON responses.
+  Using `json_schema` is recommended for models that support it. Note that the
+  model will not generate JSON without a system or user message instructing it
+  to do so.
+  """)
+model ResponseFormatJsonObject extends AssistantsResponseFormat {
+  @doc("""
+    The type of response format being defined. Always `json_object`.
+    """)
+  type: "json_object" ;
+}
+
+@access(Access.public)
+@usage(Usage.input | Usage.output)
+@discriminator("type")
+model DotNetAssistantResponseFormat {
+  ...AssistantsResponseFormat;
+}
+
+@access(Access.public)
+@usage(Usage.input | Usage.output)
+model DotNetAssistantResponseFormatText extends DotNetAssistantResponseFormat {
+  @doc("""
+    The type of response format being defined. Always `text`.
+    """)
+  type: "text";
+}
+
+@access(Access.public)
+@usage(Usage.input | Usage.output)
+model DotNetAssistantResponseFormatJsonSchema
+  extends DotNetAssistantResponseFormat {
+  type: "json_schema";
+  json_schema: {
+    description?: string;
+    name: string;
+    schema?: unknown;
+    strict?: boolean | null = false;
+  };
+}
+
+@access(Access.public)
+@usage(Usage.input | Usage.output)
+model DotNetAssistantResponseFormatJsonObject
+  extends DotNetAssistantResponseFormat {
+  ...ResponseFormatJsonObject;
+}
+
+// Tool customization (apply_discriminator): establish a common, discriminated union
+/**
+ * JSON Schema response format. Used to generate structured JSON responses.
+ * Learn more about [Structured Outputs](/docs/guides/structured-outputs).
+ */
+model ResponseFormatJsonSchema extends AssistantsResponseFormat {
+  @doc("""
+    The type of response format being defined. Always `json_schema`.
+    """)
+  type: "json_schema";
+
+  /** Structured Outputs configuration options, including a JSON Schema. */
+  json_schema: {
+    /**
+     * A description of what the response format is for, used by the model to
+     * determine how to respond in the format.
+     */
+    description?: string;
+
+    /**
+     * The name of the response format. Must be a-z, A-Z, 0-9, or contain
+     * underscores and dashes, with a maximum length of 64.
+     */
+    name: string;
+
+    schema?: Record<unknown>;
+
+    @doc("""
+      Whether to enable strict schema adherence when generating the output.
+      If set to true, the model will always follow the exact schema defined
+      in the `schema` field. Only a subset of JSON Schema is supported when
+      `strict` is `true`. To learn more, read the [Structured Outputs
+      guide](/docs/guides/structured-outputs).
+      """)
+    strict?: boolean | null = false;
+  };
+}
 
 @doc("""
   Specifies the format that the model must output. Compatible with [GPT-4o](/docs/models#gpt-4o), [GPT-4 Turbo](/docs/models#gpt-4-turbo-and-gpt-4), and all GPT-3.5 Turbo models since `gpt-3.5-turbo-1106`.
@@ -22,7 +145,10 @@ namespace OpenAI;
   """)
 union AssistantsApiResponseFormatOption {
   "auto",
-  ResponseFormatText,
+  @doc("""
+    The type of response format being defined. Always `text`.
+    """)
+  type: "text",
   ResponseFormatJsonObject,
   ResponseFormatJsonSchema,
 }
@@ -44,7 +170,7 @@ model CreateAssistantRequest {
   @maxLength(256000)
   instructions?: string | null;
 
-  reasoning_effort?: ReasoningEffort | null = "medium";
+  reasoning_effort?: AssistantsReasoningEffort | null = "medium";
 
   // Tool customization: use common model base for tool definitions
   @doc("""
@@ -69,7 +195,7 @@ model CreateAssistantRequest {
     file_search?: ToolResourcesFileSearch;
   } | null;
 
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 
   /** What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. */
   @minValue(0)
@@ -92,7 +218,7 @@ model ModifyAssistantRequest {
   /** ID of the model to use. You can use the [List models](/docs/api-reference/models/list) API to see all of your available models, or see our [Model overview](/docs/models) for descriptions of them. */
   `model`?: AssistantSupportedModels;
 
-  reasoning_effort?: ReasoningEffort | null = "medium";
+  reasoning_effort?: AssistantsReasoningEffort | null = "medium";
 
   /** The name of the assistant. The maximum length is 256 characters. */
   @maxLength(256)
@@ -129,7 +255,7 @@ model ModifyAssistantRequest {
     file_search?: ToolResourcesFileSearchIdsOnly;
   } | null;
 
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 
   /** What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. */
   @minValue(0)
@@ -195,6 +321,14 @@ model AssistantToolsFileSearch extends AssistantToolDefinition {
 }
 
 @doc("""
+  The ranker to use for the file search. If not specified will use the `auto` ranker.
+  """)
+union FileSearchRanker {
+  "auto",
+  "default_2024_08_21",
+}
+
+@doc("""
   The ranking options for the file search. If not specified, the file search tool will use the `auto` ranker and a score_threshold of 0.
   
   See the [file search tool documentation](/docs/assistants/tools/file-search#customizing-file-search-settings) for more information.
@@ -215,6 +349,26 @@ model AssistantToolsFileSearchTypeOnly {
   type: "file_search";
 }
 
+model AssistantsFunctionObject {
+  /** A description of what the function does, used by the model to choose when and how to call the function. */
+  description?: string;
+
+  /** The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64. */
+  name: string;
+
+  /**
+   * The parameters the functions accepts, described as a JSON Schema object. See the [guide](/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format.
+   *
+   * Omitting `parameters` defines a function with an empty parameter list.
+   */
+  parameters?: unknown;
+
+  @doc("""
+    Whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the `parameters` field. Only a subset of JSON Schema is supported when `strict` is `true`. Learn more about Structured Outputs in the [function calling guide](docs/guides/function-calling).
+    """)
+  strict?: boolean | null = false;
+}
+
 // Tool customization (apply_discriminator): apply a common model base for tool definitions
 model AssistantToolsFunction extends AssistantToolDefinition {
   @doc("""
@@ -222,7 +376,7 @@ model AssistantToolsFunction extends AssistantToolDefinition {
     """)
   type: AssistantToolDefinitionType.function;
 
-  function: FunctionObject;
+  function: AssistantsFunctionObject;
 }
 
 @doc("""
@@ -280,7 +434,16 @@ model AssistantObject {
     file_search?: ToolResourcesFileSearchIdsOnly;
   } | null;
 
-  ...MetadataPropertyForResponse;
+  /**
+   * Set of 16 key-value pairs that can be attached to an object. This can be
+   * useful for storing additional information about the object in a structured
+   * format, and querying for objects via API or the dashboard.
+   *
+   * Keys are strings with a maximum length of 64 characters. Values are strings
+   * with a maximum length of 512 characters.
+   */
+  @extension("x-oaiTypeLabel", "map")
+  metadata?: Record<string> | null;
 
   /** What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. */
   @minValue(0)
@@ -373,4 +536,10 @@ union AssistantSupportedModels {
   "gpt-3.5-turbo-1106",
   "gpt-3.5-turbo-0125",
   "gpt-3.5-turbo-16k-0613",
+}
+
+union AssistantCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
 }

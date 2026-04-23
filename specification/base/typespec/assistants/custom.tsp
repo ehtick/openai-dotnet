@@ -1,11 +1,6 @@
-import "@azure-tools/typespec-client-generator-core";
-import "@typespec/http";
-import "../common/models.tsp";
 import "../vector-stores/models.tsp";
 
-using Azure.ClientGenerator.Core;
 using TypeSpec.OpenAPI;
-using TypeSpec.Http;
 
 namespace OpenAI;
 
@@ -50,7 +45,7 @@ alias ToolResourcesFileSearchVectorStoreCreationHelper = {
   @extension("x-oaiExpandable", true)
   chunking_strategy?: ChunkingStrategyRequestParam;
 
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 };
 
 union AssistantToolDefinitionType {

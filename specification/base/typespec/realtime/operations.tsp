@@ -1,8 +1,7 @@
-import "../common";
+import "@typespec/http";
 import "./models_GA.tsp";
 
 using TypeSpec.Http;
-using TypeSpec.OpenAPI;
 
 namespace OpenAI;
 
@@ -29,7 +28,7 @@ interface Realtime {
     statusCode: int32;
 
     @body
-    body: Error;
+    body: RealtimeErrorResponse_GA;
   } | {
     @maxValue(599)
     @minValue(500)
@@ -37,6 +36,6 @@ interface Realtime {
     statusCode: int32;
 
     @body
-    body: Error;
+    body: RealtimeErrorResponse_GA;
   };
 }

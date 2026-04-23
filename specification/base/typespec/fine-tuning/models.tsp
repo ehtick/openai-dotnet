@@ -4,14 +4,25 @@
  */
 
 import "../chat";
-import "../common";
 import "../graders";
 import "./custom.tsp";
 
-using Http;
+using Azure.ClientGenerator.Core;
 using TypeSpec.OpenAPI;
+using TypeSpec.Http;
 
 namespace OpenAI;
+
+model FineTuningError {
+  code: string | null;
+  message: string;
+  param: string | null;
+}
+
+@error
+model FineTuningErrorResponse {
+  error: FineTuningError;
+}
 
 model CreateFineTuningJobRequest {
   /**
@@ -101,7 +112,7 @@ model CreateFineTuningJobRequest {
   seed?: int32 | null;
 
   method?: FineTuneMethod;
-  ...MetadataPropertyForRequest;
+  metadata?: Record<string>;
 }
 
 model ListPaginatedFineTuningJobsResponse {
@@ -143,18 +154,7 @@ model FineTuningJob {
   @doc("""
     For fine-tuning jobs that have `failed`, this will contain more information on the cause of the failure.
     """)
-  error: {
-    /** A machine-readable error code. */
-    code: string;
-
-    /** A human-readable error message. */
-    message: string;
-
-    @doc("""
-      The parameter that was invalid, usually `training_file` or `validation_file`. This field will be null if the failure was not parameter-specific.
-      """)
-    param: string | null;
-  } | null;
+  error?: FineTuningError;
 
   /** The name of the fine-tuned model that is being created. The value will be null if the fine-tuning job is still running. */
   fine_tuned_model: string | null;
@@ -232,7 +232,16 @@ model FineTuningJob {
   estimated_finish?: utcDateTime | null;
 
   method?: FineTuneMethod;
-  ...MetadataPropertyForResponse;
+  /**
+   * Set of 16 key-value pairs that can be attached to an object. This can be
+   * useful for storing additional information about the object in a structured
+   * format, and querying for objects via API or the dashboard.
+   *
+   * Keys are strings with a maximum length of 64 characters. Values are strings
+   * with a maximum length of 512 characters.
+   */
+  @extension("x-oaiTypeLabel", "map")
+  metadata: Record<string> | null;
 }
 
 // Tool customization (apply_discriminator): Convert to instantiation of discriminated type
@@ -349,7 +358,7 @@ model FineTuneChatRequestInput {
   /** A list of tools the model may generate JSON inputs for. */
   tools?: ChatCompletionTool[];
 
-  parallel_tool_calls?: ParallelToolCalls = true;
+  parallel_tool_calls?: boolean = true;
 
   /** A list of functions the model may generate JSON inputs for. */
   #suppress "deprecated" "Warning unnecessary for spec description of deprecation"
@@ -391,7 +400,7 @@ model FineTunePreferenceRequestInput {
     /** A list of tools the model may generate JSON inputs for. */
     tools?: ChatCompletionTool[];
 
-    parallel_tool_calls?: ParallelToolCalls = true;
+    parallel_tool_calls?: boolean = true;
   };
 
   /** The preferred completion message for the output. */
@@ -528,4 +537,33 @@ model ListFineTuningCheckpointPermissionResponse {
   first_id?: string | null;
   last_id?: string | null;
   has_more: boolean;
+}
+
+union FineTuningCheckpointCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
+}
+
+@access(Access.public)
+@usage(Usage.input)
+model FineTuningCheckpointCollectionOptions {
+  /**
+   * A cursor for use in pagination. `after` is an object ID that defines your place in the list.
+   * For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
+   * subsequent call can include after=obj_foo in order to fetch the next page of the list.
+   */
+  @query @continuationToken afterId?: string;
+
+  /**
+   * A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
+   * default is 20.
+   */
+  @query pageSizeLimit?: int32 = 20;
+
+  /**
+   * Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
+   * for descending order.
+   */
+  @query order?: FineTuningCheckpointCollectionOrder;
 }

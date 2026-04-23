@@ -1,6 +1,5 @@
 import "@typespec/http";
 import "@typespec/openapi";
-import "../common/models.tsp";
 import "./models.tsp";
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -110,7 +109,7 @@ op ListSkills(
   /** Sort order of results by timestamp. Use `asc` for ascending order or `desc` for descending order. */
   #suppress "@azure-tools/typespec-azure-core/no-query-explode" "Auto-suppressed warnings non-applicable rules during import."
   @query(#{ explode: true })
-  order?: OrderEnum,
+  order?: SkillCollectionOrder,
 
   /** Identifier for the last item from the previous pagination request */
   #suppress "@azure-tools/typespec-azure-core/no-query-explode" "Auto-suppressed warnings non-applicable rules during import."
@@ -123,7 +122,7 @@ op ListSkills(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -131,7 +130,7 @@ op ListSkills(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/byos" "Auto-suppressed warnings non-applicable rules during import."
@@ -242,7 +241,7 @@ op CreateSkillMultipart(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -250,7 +249,7 @@ op CreateSkillMultipart(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -356,7 +355,7 @@ op CreateSkillJson(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -364,7 +363,7 @@ op CreateSkillJson(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -473,7 +472,7 @@ op DeleteSkill(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -481,7 +480,7 @@ op DeleteSkill(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -590,7 +589,7 @@ op GetSkill(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -598,7 +597,7 @@ op GetSkill(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -726,7 +725,7 @@ op UpdateSkillDefaultVersion(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -734,7 +733,7 @@ op UpdateSkillDefaultVersion(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -854,7 +853,7 @@ op GetSkillContent(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -862,7 +861,7 @@ op GetSkillContent(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -981,7 +980,7 @@ op ListSkillVersions(
   /** Sort order of results by version number. */
   #suppress "@azure-tools/typespec-azure-core/no-query-explode" "Auto-suppressed warnings non-applicable rules during import."
   @query(#{ explode: true })
-  order?: OrderEnum,
+  order?: SkillVersionCollectionOrder,
 
   /** The skill version ID to start after. */
   #suppress "@azure-tools/typespec-azure-core/no-query-explode" "Auto-suppressed warnings non-applicable rules during import."
@@ -994,7 +993,7 @@ op ListSkillVersions(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -1002,7 +1001,7 @@ op ListSkillVersions(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/byos" "Auto-suppressed warnings non-applicable rules during import."
@@ -1124,7 +1123,7 @@ op CreateSkillVersionMultipart(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -1132,7 +1131,7 @@ op CreateSkillVersionMultipart(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -1249,7 +1248,7 @@ op CreateSkillVersionJson(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -1257,7 +1256,7 @@ op CreateSkillVersionJson(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -1381,7 +1380,7 @@ op DeleteSkillVersion(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -1389,7 +1388,7 @@ op DeleteSkillVersion(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -1511,7 +1510,7 @@ op GetSkillVersion(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -1519,7 +1518,7 @@ op GetSkillVersion(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };
 
 #suppress "@azure-tools/typespec-azure-core/casing-style" "Auto-suppressed warnings non-applicable rules during import."
@@ -1652,7 +1651,7 @@ op GetSkillVersionContent(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 } | {
   @maxValue(599)
   @minValue(500)
@@ -1660,5 +1659,5 @@ op GetSkillVersionContent(
   statusCode: int32;
 
   @body
-  body: ErrorResponse;
+  body: SkillsErrorResponse;
 };

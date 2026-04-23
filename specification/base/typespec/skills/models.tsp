@@ -1,9 +1,46 @@
-import "../containers/models.tsp";
 import "@typespec/openapi";
 import "@typespec/http";
+
 using TypeSpec.OpenAPI;
 using TypeSpec.Http;
 namespace OpenAI;
+
+model SkillsError {
+  code: string | null;
+  message: string;
+  param: string | null;
+  type: string;
+}
+
+@error
+model SkillsErrorResponse {
+  error: SkillsError;
+}
+
+union SkillCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
+}
+
+union SkillVersionCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
+}
+
+union ContainerSkillType {
+  string,
+  "skill_reference",
+  "inline",
+}
+
+#suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
+@discriminator("type")
+model ContainerSkill {
+  type: ContainerSkillType;
+}
+
 #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
 model SkillReferenceParam extends ContainerSkill {
   /** References a skill created with the /v1/skills endpoint. */

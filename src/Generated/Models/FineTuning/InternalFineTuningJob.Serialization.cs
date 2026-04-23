@@ -86,17 +86,10 @@ namespace OpenAI.FineTuning
                 writer.WritePropertyName("created_at"u8);
                 writer.WriteNumberValue(CreatedAt, "U");
             }
-            if (_additionalBinaryDataProperties?.ContainsKey("error") != true)
+            if (Optional.IsDefined(Error) && _additionalBinaryDataProperties?.ContainsKey("error") != true)
             {
-                if (Optional.IsDefined(Error))
-                {
-                    writer.WritePropertyName("error"u8);
-                    writer.WriteObjectValue(Error, options);
-                }
-                else
-                {
-                    writer.WriteNull("error"u8);
-                }
+                writer.WritePropertyName("error"u8);
+                writer.WriteObjectValue(Error, options);
             }
             if (_additionalBinaryDataProperties?.ContainsKey("fine_tuned_model") != true)
             {
@@ -327,7 +320,6 @@ namespace OpenAI.FineTuning
                 {
                     if (prop.Value.ValueKind == JsonValueKind.Null)
                     {
-                        error = null;
                         continue;
                     }
                     error = FineTuningError.DeserializeFineTuningError(prop.Value, options);

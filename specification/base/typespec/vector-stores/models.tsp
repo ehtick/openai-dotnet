@@ -1,7 +1,32 @@
 import "@typespec/openapi";
-import "../common/models.tsp";
+
 using TypeSpec.OpenAPI;
 namespace OpenAI;
+
+union VectorStoreCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
+}
+
+union VectorStoreFileCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
+}
+
+model VectorStoresError {
+  code: string | null;
+  message: string;
+  param: string | null;
+  type: string;
+}
+
+@error
+model VectorStoresErrorResponse {
+  error: VectorStoresError;
+}
+
 /** A filter used to compare a specified attribute key to a given value using a defined comparison operation. */
 model VectorStoreComparisonFilter {
   @doc("""
@@ -136,7 +161,7 @@ model CreateVectorStoreRequest {
   chunking_strategy?: ChunkingStrategyRequestParam;
   #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
   #suppress "@azure-tools/typespec-azure-core/no-nullable" "Auto-suppressed warnings non-applicable rules during import."
-  metadata?: Metadata | null;
+  metadata?: Record<string> | null;
 }
 
 /** The expiration policy for a vector store. */
@@ -417,7 +442,7 @@ model VectorStoreObject {
 
   #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
   #suppress "@azure-tools/typespec-azure-core/no-nullable" "Auto-suppressed warnings non-applicable rules during import."
-  metadata: Metadata | null;
+  metadata: Record<string> | null;
 }
 
 #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
@@ -463,7 +488,7 @@ model UpdateVectorStoreRequest {
   expires_after?: VectorStoreExpirationAfter;
   #suppress "@azure-tools/typespec-azure-core/documentation-required" "Auto-suppressed warnings non-applicable rules during import."
   #suppress "@azure-tools/typespec-azure-core/no-nullable" "Auto-suppressed warnings non-applicable rules during import."
-  metadata?: Metadata | null;
+  metadata?: Record<string> | null;
 }
 
 /** A batch of files attached to a vector store. */

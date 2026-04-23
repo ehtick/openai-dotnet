@@ -3,13 +3,31 @@
  * Edits made directly to this file will be lost.
  */
 
-import "../common";
 import "./custom.tsp";
+import "@azure-tools/typespec-client-generator-core";
 
+using Azure.ClientGenerator.Core;
 using Http;
 using TypeSpec.OpenAPI;
 
 namespace OpenAI;
+
+@doc("""
+  **Reasoning models only**
+  
+  Constrains effort on reasoning for
+  [reasoning models](https://platform.openai.com/docs/guides/reasoning).
+  Currently supported values are `none`, `minimal`, `low`, `medium`, and `high`. Reducing
+  reasoning effort can result in faster responses and fewer tokens used
+  on reasoning in a response.
+  """)
+union ResponsesReasoningEffort {
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+}
 
 /** A filter used to compare a specified attribute key to a given value using a defined comparison operation. */
 model ResponsesComparisonFilter {
@@ -74,8 +92,59 @@ alias CodeInterpreterFileOutputFile = {
   file_id: string;
 };
 
+@doc("""
+  Specifies the latency tier to use for processing the request. This parameter is relevant for customers subscribed to the scale tier service:
+    - If set to 'auto', and the Project is Scale tier enabled, the system
+      will utilize scale tier credits until they are exhausted.
+    - If set to 'auto', and the Project is not Scale tier enabled, the request will be processed using the default service tier with a lower uptime SLA and no latency guarantee.
+    - If set to 'default', the request will be processed using the default service tier with a lower uptime SLA and no latency guarantee.
+    - If set to 'flex', the request will be processed with the Flex Processing service tier. [Learn more](/docs/guides/flex-processing).
+    - When not set, the default behavior is 'auto'.
+  
+    When this parameter is set, the response body will include the `service_tier` utilized.
+  """)
+union DotNetResponseServiceTier {
+  "auto",
+  "default",
+  "flex",
+  "scale",
+}
+
 model CreateResponse {
-  ...ModelResponsePropertiesForRequest;
+  metadata?: Record<string>;
+
+  @doc("""
+    What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+    We generally recommend altering this or `top_p` but not both.
+    """)
+  @minValue(0)
+  @maxValue(2)
+  temperature?: float32 | null = 1;
+  
+  /** An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. */
+  top_logprobs?: int32 | null;
+
+  @doc("""
+    An alternative to sampling with temperature, called nucleus sampling,
+    where the model considers the results of the tokens with top_p probability
+    mass. So 0.1 means only the tokens comprising the top 10% probability mass
+    are considered.
+    
+    We generally recommend altering this or `temperature` but not both.
+    """)
+  @minValue(0)
+  @maxValue(1)
+  top_p?: float32 | null = 1;
+
+  /** A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](/docs/guides/safety-best-practices#end-user-ids). */
+  user?: string;
+
+  /**A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
+  The IDs should be a string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers).*/
+  safety_identifier?: string;
+
+  service_tier?: DotNetResponseServiceTier | null = "auto";
+  
   ...ResponseProperties;
 
   // Tool customization: Apply renamed Item -> ItemParam
@@ -153,7 +222,48 @@ model `ConversationParam-2` {
 }
 
 model Response {
-  ...ModelResponsePropertiesForResponse;
+  /**
+   * Set of 16 key-value pairs that can be attached to an object. This can be
+   * useful for storing additional information about the object in a structured
+   * format, and querying for objects via API or the dashboard.
+   *
+   * Keys are strings with a maximum length of 64 characters. Values are strings
+   * with a maximum length of 512 characters.
+   */
+  @extension("x-oaiTypeLabel", "map")
+  metadata: Record<string> | null;
+
+  @doc("""
+    What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.
+    We generally recommend altering this or `top_p` but not both.
+    """)
+  @minValue(0)
+  @maxValue(2)
+  temperature: float32 | null;
+
+  /** An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. */
+  top_logprobs?: int32 | null;
+
+  @doc("""
+    An alternative to sampling with temperature, called nucleus sampling,
+    where the model considers the results of the tokens with top_p probability
+    mass. So 0.1 means only the tokens comprising the top 10% probability mass
+    are considered.
+    
+    We generally recommend altering this or `temperature` but not both.
+    """)
+  @minValue(0)
+  @maxValue(1)
+  top_p: float32 | null;
+
+  /** A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](/docs/guides/safety-best-practices#end-user-ids). */
+  user: string | null;
+
+  /**A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.
+  The IDs should be a string that uniquely identifies each user. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers).*/
+  safety_identifier?: string;
+
+  service_tier?: DotNetResponseServiceTier;
   ...ResponseProperties;
 
   /** Unique identifier for this Response. */
@@ -305,8 +415,61 @@ model ResponseProperties {
 alias ModelIds = ModelIdsResponses;
 
 union ModelIdsResponses {
-  ModelIdsShared,
-
+  "gpt-4.1"
+  | "gpt-4.1-mini"
+  | "gpt-4.1-nano"
+  | "gpt-4.1-2025-04-14"
+  | "gpt-4.1-mini-2025-04-14"
+  | "gpt-4.1-nano-2025-04-14"
+  | "o4-mini"
+  | "o4-mini-2025-04-16"
+  | "o3"
+  | "o3-2025-04-16"
+  | "o3-mini"
+  | "o3-mini-2025-01-31"
+  | "o1"
+  | "o1-2024-12-17"
+  | "o1-preview"
+  | "o1-preview-2024-09-12"
+  | "o1-mini"
+  | "o1-mini-2024-09-12"
+  | "gpt-4o"
+  | "gpt-4o-2024-11-20"
+  | "gpt-4o-2024-08-06"
+  | "gpt-4o-2024-05-13"
+  | "gpt-4o-audio-preview"
+  | "gpt-4o-audio-preview-2024-10-01"
+  | "gpt-4o-audio-preview-2024-12-17"
+  | "gpt-4o-audio-preview-2025-06-03"
+  | "gpt-4o-mini-audio-preview"
+  | "gpt-4o-mini-audio-preview-2024-12-17"
+  | "gpt-4o-search-preview"
+  | "gpt-4o-mini-search-preview"
+  | "gpt-4o-search-preview-2025-03-11"
+  | "gpt-4o-mini-search-preview-2025-03-11"
+  | "chatgpt-4o-latest"
+  | "codex-mini-latest"
+  | "gpt-4o-mini"
+  | "gpt-4o-mini-2024-07-18"
+  | "gpt-4-turbo"
+  | "gpt-4-turbo-2024-04-09"
+  | "gpt-4-0125-preview"
+  | "gpt-4-turbo-preview"
+  | "gpt-4-1106-preview"
+  | "gpt-4-vision-preview"
+  | "gpt-4"
+  | "gpt-4-0314"
+  | "gpt-4-0613"
+  | "gpt-4-32k"
+  | "gpt-4-32k-0314"
+  | "gpt-4-32k-0613"
+  | "gpt-3.5-turbo"
+  | "gpt-3.5-turbo-16k"
+  | "gpt-3.5-turbo-0301"
+  | "gpt-3.5-turbo-0613"
+  | "gpt-3.5-turbo-1106"
+  | "gpt-3.5-turbo-0125"
+  | "gpt-3.5-turbo-16k-0613"
     | "o1-pro"
     | "o1-pro-2025-03-19"
     | "o3-pro"
@@ -655,6 +818,16 @@ model ComputerUsePreviewTool extends Tool {
   display_height: int32;
 }
 
+@doc("""
+  High level guidance for the amount of context window space to use for the
+  search. One of `low`, `medium`, or `high`. `medium` is the default.
+  """)
+union WebSearchContextSize {
+  "low",
+  "medium",
+  "high",
+}
+
 // Tool customization (apply_discriminator): Apply discriminated type base for tools
 /** This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search). */
 model WebSearchPreviewTool extends Tool {
@@ -929,7 +1102,7 @@ model Coordinate {
  * [reasoning models](https://platform.openai.com/docs/guides/reasoning).
  */
 model Reasoning {
-  effort?: ReasoningEffort | null = "medium";
+  effort?: ResponsesReasoningEffort | null = "medium";
 
   @doc("""
     A summary of the reasoning performed by the model. This can be
@@ -1010,7 +1183,7 @@ model ResponseTextFormatConfigurationJsonSchema
    */
   name: string;
 
-  schema: ResponseFormatJsonSchemaSchema;
+  schema: Record<unknown>;
 
   @doc("""
     Whether to enable strict schema adherence when generating the output.
@@ -3033,4 +3206,48 @@ model CompactResource {
 model ApplyPatchTool extends Tool {
   /** The type of the tool. Always `apply_patch`. */
   type: ToolType.apply_patch;
+}
+
+alias SseResponseOfResponseStreamEvent = {
+  @header("Content-Type") contentType: "text/event-stream";
+  @body responseBody: ResponseStreamEvent;
+};
+
+union DotNetResponseItemCollectionOrder {
+  string,
+  Ascending: "asc",
+  Descending: "desc",
+}
+
+@access(Access.public)
+@usage(Usage.input)
+model DotNetResponseItemCollectionOptions {
+  @path response_id: string;
+
+  /**
+   * A cursor for use in pagination. `after` is an object ID that defines your place in the list.
+   * For instance, if you make a list request and receive 100 objects, ending with obj_foo, your
+   * subsequent call can include after=obj_foo in order to fetch the next page of the list.
+   */
+  @query @continuationToken afterId?: string;
+
+  /**
+   * A cursor for use in pagination. `before` is an object ID that defines your place in the list.
+   * For instance, if you make a list request and receive 100 objects, starting with obj_foo, your
+   * subsequent call can include before=obj_foo in order to fetch the previous page of the list.
+   */
+  @query beforeId?: string;
+
+  /**
+   * A limit on the number of objects to be returned. Limit can range between 1 and 100, and the
+   * default is 20.
+   */
+  @query pageSizeLimit?: int32 = 20;
+
+  /**
+   * Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
+   * for descending order.
+   */
+  @query order?: DotNetResponseItemCollectionOrder;
+
 }

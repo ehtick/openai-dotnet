@@ -1,5 +1,4 @@
 import "../../base/typespec/responses/main.tsp";
-import "./common.models.tsp";
 import "@azure-tools/typespec-client-generator-core";
 
 using Azure.ClientGenerator.Core;
@@ -12,30 +11,6 @@ namespace OpenAI;
 model DotNetItemReferenceItemResource extends ItemResource {
   type: ItemType.item_reference;
   ...ItemReferenceItemBase;
-}
-
-alias DotNetResponseItemCollectionOrderQueryParameter = {
-  /**
-   * Sort order by the `created_at` timestamp of the objects. `asc` for ascending order and`desc`
-   * for descending order.
-   */
-  @query order?: DotNetResponseItemCollectionOrder;
-};
-
-union DotNetResponseItemCollectionOrder {
-  string,
-  Ascending: "asc",
-  Descending: "desc",
-}
-
-@access(Access.public)
-@usage(Usage.input)
-model DotNetResponseItemCollectionOptions {
-  @path response_id: string;
-  ...DotNetCollectionAfterQueryParameter;
-  ...DotNetCollectionBeforeQueryParameter;
-  ...DotNetCollectionLimitQueryParameter;
-  ...DotNetResponseItemCollectionOrderQueryParameter;
 }
 
 @access(Access.public)
